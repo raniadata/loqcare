@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}تفاصيل الإحالة{% endblock %}
+{% block content %}
+<h1>إحالة #{{ case.id }}: {{ case.patient.full_name }}</h1>
+
+<section class="card">
+    <table class="data-table kv-table">
+        <tbody>
+            <tr><td class="muted">اسم المريض</td><td>{{ case.patient.full_name }}</td></tr>
+            <tr><td class="muted">رقم الواتساب</td><td><span dir="ltr" class="ltr-inline">{{ case.patient.whatsapp_number }}</span></td></tr>
+            <tr><td class="muted">البرنامج</td><td>{{ case.program.name }}</td></tr>
+            <tr><td class="muted">الحالة</td><td><span class="status-badge status-{{ case.status }}">{{ case.status }}</span></td></tr>
+            <tr><td class="muted">تاريخ التسجيل</td><td>{{ case.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+            <tr><td class="muted">آخر تحديث</td><td>{{ case.updated_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+            <tr><td class="muted">ملاحظاتك</td><td>{{ case.notes or "—" }}</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<p><a href="{{ url_for('doctor.cases') }}" class="btn-small">← الرجوع إلى كل الإحالات</a></p>
+{% endblock %}

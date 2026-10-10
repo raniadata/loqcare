@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}المرضى{% endblock %}
+{% block content %}
+<h1>المرضى المؤكدون (Confirmed)</h1>
+<p class="muted">لائحة عامة لكل المرضى اللي وافقوا على المتابعة، من كل الأطباء وحالات B2C.</p>
+
+{% if cases %}
+    <div class="data-table-wrapper">
+    <table class="data-table" data-filterable data-filter-key="admin-patients">
+        <thead><tr><th data-filter="text">#</th><th data-filter="text">اسم المريض</th><th data-filter="text">رقم الواتساب</th><th data-filter="select">البرنامج</th><th data-filter="text">الطبيب المحيل</th><th data-filter="date">تاريخ التأكيد</th></tr></thead>
+        <tbody>
+        {% for case in cases %}
+            <tr>
+                <td>{{ case.id }}</td>
+                <td><a href="{{ url_for('admin.case_detail', case_id=case.id) }}" class="name-link">{{ case.patient.full_name }}</a></td>
+                <td><span dir="ltr" class="ltr-inline">{{ case.patient.whatsapp_number }}</span></td>
+                <td>{{ case.program.name }}</td>
+                <td>{{ case.doctor.full_name if case.doctor else "— (B2C)" }}</td>
+                <td>{{ case.updated_at.strftime("%Y-%m-%d") }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+{% else %}
+    <p class="muted">لا يوجد أي مريض مؤكد بعد.</p>
+{% endif %}
+{% endblock %}

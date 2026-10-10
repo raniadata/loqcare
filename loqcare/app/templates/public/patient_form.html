@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import phone_row %}
+{% block title %}تسجيل مريض جديد — LOQ CARE{% endblock %}
+{% block content %}
+<div class="card form-card">
+    <h1>سجّل في برنامجك العلاجي</h1>
+    <p class="muted">
+        عبّئ البيانات التالية وسيتواصل معك فريق LOQ CARE عبر الواتساب لاستكمال التسجيل.
+    </p>
+
+    <form method="post" action="{{ url_for('public.patient_form_post') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        {# Honeypot: حقل مخفي عن المستخدم الحقيقي، الـ bots كيعمروه أوتوماتيكياً #}
+        <div class="hp-field" aria-hidden="true">
+            <label>لا تملأ هذا الحقل</label>
+            <input type="text" name="website" tabindex="-1" autocomplete="off">
+        </div>
+
+        <label>الاسم الكامل</label>
+        <input type="text" name="full_name" required autofocus>
+
+        <label>رقم الواتساب</label>
+        {{ phone_row(selected=(form.get("country_code") if form else None) or default_country_code, value=(form.get("local_number","") if form else "")) }}
+        <p class="field-hint">اختر رمز الدولة ثم أدخل الرقم المحلي بدون الصفر الأول</p>
+
+        <label>البرنامج المطلوب</label>
+        <select name="program_id" required>
+            <option value="" disabled selected>اختر البرنامج</option>
+            {% for program in programs %}
+                <option value="{{ program.id }}">{{ program.name }}</option>
+            {% endfor %}
+        </select>
+
+        <label>ملاحظات إضافية (اختياري)</label>
+        <textarea name="notes" rows="3" placeholder="أي معلومة تود إضافتها عن حالتك"></textarea>
+
+        <button type="submit" class="btn-gold full-width">إرسال الطلب</button>
+    </form>
+</div>
+{% endblock %}

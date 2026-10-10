@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% from "_macros.html" import phone_row %}
+{% block title %}تسجيل حساب طبيب{% endblock %}
+{% block content %}
+{% set form = form or {} %}
+{% set SPECIALTIES = ["طب عام", "طب باطني", "غدد صماء وسكري", "قلب وأوعية دموية", "جهاز هضمي وكبد", "كلى", "أمراض صدرية وجهاز تنفسي", "أمراض جلدية", "مخ وأعصاب", "نساء وتوليد", "أطفال", "جراحة عامة", "جراحة عظام", "أنف وأذن وحنجرة", "عيون", "مسالك بولية", "أورام", "روماتيزم ومفاصل", "صحة نفسية وطب نفسي", "طب أسرة", "تغذية علاجية", "طب رياضي", "طب تجميل"] %}
+<div class="card form-card form-card-wide">
+    <h1>تسجيل حساب طبيب مُحيل</h1>
+    <p class="muted">بعد التسجيل، يبقى حسابك في انتظار موافقة الإدارة قبل أن تتمكن من الدخول.</p>
+    {% if form %}
+    <p class="form-restored">تم الاحتفاظ بالبيانات التي أدخلتها — صحّح الخطأ المذكور أعلاه وأعد إدخال كلمة المرور فقط.</p>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('auth.register_post') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <h3 class="form-section-title">البيانات الأساسية (إلزامية)</h3>
+
+        <label>الاسم الكامل</label>
+        <input type="text" name="full_name" value="{{ form.get('full_name', '') }}" required>
+
+        <label>التخصص</label>
+        <select name="specialty" id="specialty-select" required onchange="document.getElementById('specialty-other').style.display = this.value === 'أخرى' ? 'block' : 'none';">
+            <option value="" disabled {% if not form.get('specialty') %}selected{% endif %}>اختر التخصص</option>
+            {% for s in SPECIALTIES %}
+            <option value="{{ s }}" {% if form.get('specialty') == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+            <option value="أخرى" {% if form.get('specialty') == 'أخرى' %}selected{% endif %}>أخرى (يرجى التحديد)</option>
+        </select>
+        <input type="text" name="specialty_other" id="specialty-other" placeholder="اكتب التخصص هنا"
+               value="{{ form.get('specialty_other', '') }}"
+               style="display:{{ 'block' if form.get('specialty') == 'أخرى' else 'none' }}; margin-top:8px;">
+        <p class="field-hint">إذا اخترت "أخرى"، يرجى كتابة التخصص في الحقل الذي يظهر أسفله</p>
+
+        <label>اسم المستشفى</label>
+        <input type="text" name="hospital_name" value="{{ form.get('hospital_name', '') }}" required>
+
+        <label>القسم</label>
+        <input type="text" name="department" value="{{ form.get('department', '') }}" required>
+
+        <label>رقم الترخيص الطبي</label>
+        <input type="text" name="license_number" value="{{ form.get('license_number', '') }}"
+               inputmode="numeric" pattern="[0-9 \-]*" maxlength="20" data-digits title="أرقام فقط" required>
+        <p class="field-hint">أرقام فقط</p>
+
+        <div class="two-col">
+            <div>
+                <label>الدولة</label>
+                <input type="text" name="country" value="{{ form.get('country', '') }}" required>
+            </div>
+            <div>
+                <label>المدينة</label>
+                <input type="text" name="city" value="{{ form.get('city', '') }}" required>
+            </div>
+        </div>
+
+        <label>رقم الهاتف / واتساب</label>
+        {{ phone_row(selected=form.get("country_code") or default_country_code, value=form.get("local_number", "")) }}
+        <p class="field-hint">اختر رمز الدولة ثم أدخل الرقم المحلي (أرقام فقط)</p>
+
+        <label>البريد الإلكتروني</label>
+        <input type="email" name="email" value="{{ form.get('email', '') }}" required>
+
+        <label>كلمة المرور</label>
+        <input type="password" name="password" required>
+
+        <label>تأكيد كلمة المرور</label>
+        <input type="password" name="confirm_password" required>
+
+        <h3 class="form-section-title">بيانات إضافية (اختيارية)</h3>
+
+        <label>سنوات الخبرة</label>
+        <input type="number" name="years_experience" min="0" max="60" value="{{ form.get('years_experience', '') }}">
+
+        <label>الشهادات الإضافية</label>
+        <textarea name="certificates" rows="2">{{ form.get('certificates', '') }}</textarea>
+
+        <label>نبذة تعريفية</label>
+        <textarea name="bio" rows="3">{{ form.get('bio', '') }}</textarea>
+
+        <button type="submit" class="btn-gold full-width">إرسال طلب التسجيل</button>
+    </form>
+</div>
+
+{% if focus %}
+<script>
+    (function () {
+        var el = document.querySelector('[name="{{ focus }}"]');
+        if (el) { el.focus(); if (el.scrollIntoView) el.scrollIntoView({block: 'center'}); }
+    })();
+</script>
+{% endif %}
+{% endblock %}

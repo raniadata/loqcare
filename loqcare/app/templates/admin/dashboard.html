@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}لوحة الإدارة{% endblock %}
+{% block content %}
+<h1>لوحة الإدارة</h1>
+
+<section class="stat-grid">
+    <a class="stat-card stat-link" href="{{ url_for('admin.doctors_list') }}">
+        <span class="stat-number">{{ stats.total_doctors }}</span>
+        <span class="stat-label">أطباء نشطون</span>
+    </a>
+    <a class="stat-card stat-link" href="{{ url_for('admin.team_directory') }}">
+        <span class="stat-number">{{ stats.total_team }}</span>
+        <span class="stat-label">أعضاء الفريق الطبي</span>
+    </a>
+    <a class="stat-card stat-gold stat-link" href="{{ url_for('admin.approvals') }}">
+        <span class="stat-number">{{ stats.pending_approvals }}</span>
+        <span class="stat-label">طلبات في انتظار الموافقة</span>
+    </a>
+    <a class="stat-card stat-link" href="{{ url_for('admin.all_cases') }}">
+        <span class="stat-number">{{ stats.total_cases }}</span>
+        <span class="stat-label">إجمالي الحالات</span>
+    </a>
+</section>
+
+<section class="card">
+    <h2>توزيع الحالات حسب الوضع</h2>
+    <div class="pie-chart-row">
+        <div class="pie-chart-circle" style="background: {{ pie_gradient }};"></div>
+        <div class="pie-legend">
+            {% for item in pie_legend %}
+                <div class="pie-legend-item">
+                    <span class="pie-legend-dot" style="background: {{ item.color }};"></span>
+                    {{ item.label }}
+                    <span class="pie-legend-count">({{ item.count }} — {{ item.percent }}%)</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border);">
+    {% set total = stats.total_cases if stats.total_cases > 0 else 1 %}
+    <div class="status-bars">
+        {% for status, count in stats.status_counts.items() %}
+        <div class="status-bar-row">
+            <span class="status-bar-label">
+                <span class="status-badge status-{{ status }}">{{ status }}</span>
+            </span>
+            <div class="status-bar-track">
+                <div class="status-bar-fill status-bar-{{ status }}" style="width: {{ (count / total * 100)|round(1) }}%"></div>
+            </div>
+            <span class="status-bar-count">{{ count }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="card">
+    <h2>طلبات تسجيل جديدة ({{ pending_doctors|length }})</h2>
+    {% if pending_doctors %}
+        <div class="data-table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr><th>الاسم</th><th>البريد</th><th>التخصص</th><th>إجراء</th></tr>
+            </thead>
+            <tbody>
+            {% for doc in pending_doctors %}
+                <tr>
+                    <td><a href="{{ url_for('admin.doctor_detail', user_id=doc.id) }}" class="name-link">{{ doc.full_name }}</a></td>
+                    <td>{{ doc.email }}</td>
+                    <td>{{ doc.specialty or "—" }}</td>
+                    <td class="actions">
+                        <a href="{{ url_for('admin.doctor_detail', user_id=doc.id) }}" class="btn-small">عرض التفاصيل</a>
+                        <form method="post" action="{{ url_for('admin.approve_doctor', user_id=doc.id) }}" class="inline-form" data-ajax>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-small btn-success">قبول</button>
+                        </form>
+                        <form method="post" action="{{ url_for('admin.reject_doctor', user_id=doc.id) }}" class="inline-form" data-ajax>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-small btn-danger">رفض</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    {% else %}
+        <p class="muted">لا توجد أي طلبات في انتظار الموافقة حالياً.</p>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>البحث في الحالات</h2>
+    <form method="get" class="row-form">
+        <input type="date" name="date" value="{{ request.args.get('date', '') }}" placeholder="التاريخ">
+        <input type="text" name="doctor_name" value="{{ request.args.get('doctor_name', '') }}" placeholder="اسم الطبيب المحيل">
+        <button type="submit" class="btn-primary">بحث</button>
+        {% if request.args.get('date') or request.args.get('doctor_name') %}
+            <a href="{{ url_for('admin.dashboard') }}" class="btn-small">إلغاء الفلتر</a>
+        {% endif %}
+    </form>
+</section>
+
+<section class="card">
+    <h2>{% if request.args.get('date') or request.args.get('doctor_name') %}نتائج البحث{% else %}آخر الحالات{% endif %}</h2>
+    {% if cases %}
+        <div class="data-table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr><th>#</th><th>المريض</th><th>الطبيب المحيل</th><th>البرنامج</th><th>المصدر</th><th>الحالة</th><th>الفريق المعين</th><th>تعيين</th></tr>
+            </thead>
+            <tbody>
+            {% for case in cases %}
+                <tr>
+                    <td>{{ case.id }}</td>
+                    <td><a href="{{ url_for('admin.case_detail', case_id=case.id) }}" class="name-link">{{ case.patient.full_name }}</a></td>
+                    <td>{{ case.doctor.full_name if case.doctor else "—" }}</td>
+                    <td>{{ case.program.name }}</td>
+                    <td>{{ "طبيب" if case.source == "doctor_referral" else "B2C" }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin.update_case_status', case_id=case.id) }}" class="inline-form quick-status-form" data-ajax>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <select name="status" class="quick-status-select status-select-{{ case.status }}" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+                                <option value="pending" {% if case.status == "pending" %}selected{% endif %}>pending</option>
+                                <option value="confirmed" {% if case.status == "confirmed" %}selected{% endif %}>confirmed</option>
+                                <option value="declined" {% if case.status == "declined" %}selected{% endif %}>declined</option>
+                                <option value="inquiry" {% if case.status == "inquiry" %}selected{% endif %}>inquiry</option>
+                            </select>
+                        </form>
+                    </td>
+                    <td>{{ case.assignments|length }} عضو</td>
+                    <td><a href="{{ url_for('admin.case_detail', case_id=case.id) }}" class="btn-small">التفاصيل / الفريق</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    {% else %}
+        <p class="muted">لا توجد أي حالة بعد.</p>
+    {% endif %}
+</section>
+{% endblock %}

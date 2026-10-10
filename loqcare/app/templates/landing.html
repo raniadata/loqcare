@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}LOQ CARE — نظام إدارة الإحالات{% endblock %}
+{% block content %}
+<section class="hero">
+    <h1>LOQ CARE</h1>
+    <p>نظام إدارة إحالات المرضى ومتابعتهم الصحية</p>
+    <div class="hero-actions">
+        <a href="{{ url_for('public.patient_form') }}" class="hero-card hero-card-gold">
+            <strong>أنا مريض</strong>
+            <span>سجّل الآن</span>
+        </a>
+        <a href="{{ url_for('auth.login') }}" class="hero-card hero-card-teal">
+            <strong>دخول الأطباء والإدارة</strong>
+            <span>تسجيل الدخول</span>
+        </a>
+    </div>
+    <p class="muted" style="margin-top:18px;">
+        طبيب جديد؟ <a href="{{ url_for('auth.register') }}">أنشئ حساباً هنا</a>
+    </p>
+</section>
+{% endblock %}

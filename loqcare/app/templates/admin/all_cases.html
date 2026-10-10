@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}الحالات{% endblock %}
+{% block content %}
+<h1>كل الحالات ({{ cases|length }})</h1>
+
+<section class="card">
+    <form method="get" class="row-form">
+        <input type="date" name="date" value="{{ request.args.get('date', '') }}" placeholder="التاريخ">
+        <input type="text" name="doctor_name" value="{{ request.args.get('doctor_name', '') }}" placeholder="اسم الطبيب المحيل">
+        <button type="submit" class="btn-primary">بحث</button>
+        {% if request.args.get('date') or request.args.get('doctor_name') %}
+            <a href="{{ url_for('admin.all_cases') }}" class="btn-small">إلغاء الفلتر</a>
+        {% endif %}
+    </form>
+
+{% if cases %}
+    <div class="data-table-wrapper">
+    <table class="data-table" data-filterable data-filter-key="admin-cases">
+        <thead><tr>
+            <th data-filter="text">#</th>
+            <th data-filter="text">المريض</th>
+            <th data-filter="text">الطبيب المحيل</th>
+            <th data-filter="select">البرنامج</th>
+            <th data-filter="select">المصدر</th>
+            <th data-filter="select">الحالة</th>
+            <th data-filter="date">التاريخ</th>
+            <th></th>
+        </tr></thead>
+        <tbody>
+        {% for case in cases %}
+            <tr>
+                <td>{{ case.id }}</td>
+                <td><a href="{{ url_for('admin.case_detail', case_id=case.id) }}" class="name-link">{{ case.patient.full_name }}</a></td>
+                <td>{{ case.doctor.full_name if case.doctor else "— (B2C)" }}</td>
+                <td>{{ case.program.name }}</td>
+                <td>{{ "طبيب" if case.source == "doctor_referral" else "B2C" }}</td>
+                <td data-value="{{ case.status }}"><span class="status-badge status-{{ case.status }}">{{ case.status }}</span></td>
+                <td>{{ case.created_at.strftime("%Y-%m-%d") }}</td>
+                <td><a href="{{ url_for('admin.case_detail', case_id=case.id) }}">التفاصيل</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+{% else %}
+    <p class="muted">لا توجد أي حالة مطابقة.</p>
+{% endif %}
+</section>
+{% endblock %}

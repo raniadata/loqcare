@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}{{ doctor.full_name }}{% endblock %}
+{% block content %}
+<div style="display:flex; align-items:center; gap:14px; margin-bottom:6px;">
+    {% if doctor.profile_photo %}
+        <img src="{{ url_for('static', filename='uploads/profiles/' + doctor.profile_photo) }}" alt="" class="profile-photo-preview">
+    {% else %}
+        <div class="profile-photo-placeholder">{{ doctor.full_name[0] }}</div>
+    {% endif %}
+    <h1 style="margin:0;">{{ doctor.full_name }}</h1>
+</div>
+<div class="actions action-row" style="margin:10px 0 14px;">
+    <button type="button" class="btn-primary"
+            data-notify-url="{{ url_for('admin.notify_doctor', user_id=doctor.id) }}"
+            data-notify-name="{{ doctor.full_name }}">إرسال إشعار</button>
+    <a href="{{ url_for('admin.doctors_list') }}" class="btn-small">← الأطباء المحيلون</a>
+</div>
+
+<section class="card">
+    <h2>البيانات الشخصية والمهنية</h2>
+    <table class="data-table kv-table">
+        <tbody>
+            <tr><td class="muted">البريد الإلكتروني</td><td><span dir="ltr" class="ltr-inline">{{ doctor.email }}</span></td></tr>
+            <tr><td class="muted">الهاتف / واتساب</td><td><span dir="ltr" class="ltr-inline">{{ doctor.phone or "—" }}</span></td></tr>
+            <tr><td class="muted">التخصص</td><td>{{ doctor.specialty or "—" }}</td></tr>
+            <tr><td class="muted">اسم المستشفى</td><td>{{ doctor.hospital_name or "—" }}</td></tr>
+            <tr><td class="muted">القسم</td><td>{{ doctor.department or "—" }}</td></tr>
+            <tr><td class="muted">رقم الترخيص</td><td>{{ doctor.license_number or "—" }}</td></tr>
+            <tr><td class="muted">الدولة / المدينة</td><td>{{ (doctor.country + " / " + doctor.city) if doctor.country else "—" }}</td></tr>
+            <tr><td class="muted">سنوات الخبرة</td><td>{{ doctor.years_experience if doctor.years_experience is not none else "—" }}</td></tr>
+            <tr><td class="muted">الشهادات</td><td>{{ doctor.certificates or "—" }}</td></tr>
+            <tr><td class="muted">نبذة تعريفية</td><td>{{ doctor.bio or "—" }}</td></tr>
+            <tr><td class="muted">حالة الحساب</td><td><span class="status-badge status-{{ 'confirmed' if doctor.account_status == 'approved' else ('pending' if doctor.account_status == 'pending' else 'declined') }}">{{ doctor.account_status }}</span></td></tr>
+            <tr><td class="muted">تاريخ التسجيل</td><td>{{ doctor.created_at.strftime("%Y-%m-%d") }}</td></tr>
+        </tbody>
+    </table>
+</section>
+
+{% if doctor.account_status == "pending" %}
+<section class="card approval-box">
+    <h2>قرار الموافقة على الحساب</h2>
+    <p class="muted">راجع كل البيانات أعلاه ثم اتخذ القرار.</p>
+    <div class="actions">
+        <form method="post" action="{{ url_for('admin.approve_doctor', user_id=doctor.id) }}" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="{{ url_for('admin.approvals') }}">
+            <button type="submit" class="btn-success btn-small">قبول</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.reject_doctor', user_id=doctor.id) }}" class="inline-form" onsubmit="return confirm('متأكد أنك تريد رفض طلب هذا الطبيب؟');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="{{ url_for('admin.approvals') }}">
+            <button type="submit" class="btn-danger btn-small">رفض</button>
+        </form>
+    </div>
+</section>
+{% endif %}
+
+<section class="card">
+    <h2>إرسال إشعار للطبيب</h2>
+    <form method="post" action="{{ url_for('admin.notify_doctor', user_id=doctor.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <textarea name="message" rows="3" placeholder="اكتب نص الإشعار هنا..." required></textarea>
+        <button type="submit" class="btn-primary" style="margin-top:8px;">إرسال الإشعار</button>
+    </form>
+    {% if recent_notifications %}
+    <div style="margin-top:14px;">
+        <p class="muted" style="margin-bottom:6px;">آخر الإشعارات المبعوثة:</p>
+        {% for n in recent_notifications %}
+            <p class="patient-message-box" style="margin-bottom:6px;">
+                {{ n.message }} <span class="muted">— {{ n.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+            </p>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>كلمة المرور</h2>
+    <p class="muted">إذا نسي الطبيب كلمة المرور، اضغطي هنا لتوليد كلمة مرور جديدة وإرسالها له يدوياً.</p>
+    <form method="post" action="{{ url_for('admin.reset_doctor_password', user_id=doctor.id) }}"
+          onsubmit="return confirm('سيتم إنشاء كلمة مرور جديدة وإبطال القديمة. متأكد؟');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-primary">إعادة تعيين كلمة المرور</button>
+    </form>
+</section>
+
+<section class="card">
+    <h2>إحالات هذا الطبيب ({{ doctor_cases|length }})</h2>
+    {% if doctor_cases %}
+        <div class="data-table-wrapper">
+        <table class="data-table" data-filterable data-filter-key="admin-doctor-referrals">
+            <thead><tr><th data-filter="text">#</th><th data-filter="text">المريض</th><th data-filter="select">البرنامج</th><th data-filter="select">الحالة</th><th data-filter="date">التاريخ</th></tr></thead>
+            <tbody>
+            {% for case in doctor_cases %}
+                <tr>
+                    <td>{{ case.id }}</td>
+                    <td><a href="{{ url_for('admin.case_detail', case_id=case.id) }}" class="name-link">{{ case.patient.full_name }}</a></td>
+                    <td>{{ case.program.name }}</td>
+                    <td data-value="{{ case.status }}"><span class="status-badge status-{{ case.status }}">{{ case.status }}</span></td>
+                    <td>{{ case.created_at.strftime("%Y-%m-%d") }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    {% else %}
+        <p class="muted">لا توجد أي إحالة لهذا الطبيب بعد.</p>
+    {% endif %}
+</section>
+{% endblock %}

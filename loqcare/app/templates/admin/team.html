@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}الفريق الطبي{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>الفريق الطبي</h1>
+    <a href="{{ url_for('admin.new_team_member') }}" class="btn-primary">+ عضو فريق طبي</a>
+</div>
+{% with active='team' %}{% include "admin/_people_tabs.html" %}{% endwith %}
+<p class="muted">أطباء وأخصائيو تغذية LOQ CARE الذين تُعيَّن لهم الحالات. الأطباء المحيلون لهم صفحة مستقلة.</p>
+
+<section class="card" id="medical-team">
+    <h2>أعضاء الفريق الطبي ({{ team_members|length }})</h2>
+    {% if team_members %}
+        <div class="data-table-wrapper">
+        <table class="data-table" data-filterable data-filter-key="admin-team">
+            <thead><tr>
+                <th data-filter="text">الاسم</th>
+                <th data-filter="select">النوع</th>
+                <th data-filter="select">التخصص</th>
+                <th data-filter="select">الرتبة</th>
+                <th data-filter="text">البريد</th>
+                <th data-filter="text">الهاتف</th>
+                <th>الخبرة</th>
+                <th data-filter="select">الدولة</th>
+                <th>إجراء</th>
+            </tr></thead>
+            <tbody>
+            {% for member in team_members %}
+                <tr>
+                    <td><a href="{{ url_for('admin.member_detail', user_id=member.id) }}" class="name-link">{{ member.full_name }}</a></td>
+                    <td><span class="type-badge type-{{ member.member_type or 'doctor' }}">{{ member.member_type_label }}</span></td>
+                    <td data-value="{{ member.specialty or '' }}">{{ member.specialty }}{% if member.sub_specialty %} ({{ member.sub_specialty }}){% endif %}</td>
+                    <td>{{ member.member_rank or "—" }}</td>
+                    <td><span dir="ltr" class="ltr-inline">{{ member.email }}</span></td>
+                    <td><span dir="ltr" class="ltr-inline">{{ member.phone or "—" }}</span></td>
+                    <td>{{ (member.years_experience ~ " سنة") if member.years_experience else "—" }}</td>
+                    <td data-value="{{ member.country or '' }}">{{ (member.country + " / " + member.city) if member.country else "—" }}</td>
+                    <td class="actions"><a href="{{ url_for('admin.member_detail', user_id=member.id) }}" class="btn-small">التفاصيل</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    {% else %}
+        <p class="muted">لا يوجد أي عضو في الفريق الطبي حالياً.</p>
+    {% endif %}
+</section>
+{% endblock %}

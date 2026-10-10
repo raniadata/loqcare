@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import phone_row %}
+{% block title %}إحالة جديدة{% endblock %}
+{% block content %}
+<div class="card form-card">
+    <h1>تسجيل إحالة مريض جديد</h1>
+
+    <form method="post" action="{{ url_for('doctor.new_referral_post') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>اسم المريض</label>
+        <input type="text" name="patient_name" required autofocus>
+
+        <label>رقم الواتساب</label>
+        {{ phone_row(selected=(form.get("country_code") if form else None) or default_country_code, value=(form.get("local_number","") if form else "")) }}
+        <p class="field-hint">اختر رمز الدولة ثم أدخل الرقم المحلي بدون الصفر الأول</p>
+
+        <label>البرنامج</label>
+        <select name="program_id" required>
+            <option value="" disabled selected>اختر البرنامج</option>
+            {% for program in programs %}
+                <option value="{{ program.id }}">{{ program.name }}</option>
+            {% endfor %}
+        </select>
+
+        <label>ملاحظات (اختياري)</label>
+        <textarea name="notes" rows="3"></textarea>
+
+        <button type="submit" class="btn-primary full-width">تسجيل الإحالة</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}البرامج{% endblock %}
+{% block content %}
+<h1>إدارة البرامج</h1>
+
+<section class="card form-card">
+    <h2>إضافة برنامج جديد</h2>
+    <form method="post" action="{{ url_for('admin.programs_post') }}" class="row-form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="text" name="name" placeholder="اسم البرنامج" required>
+        <button type="submit" class="btn-primary">إضافة</button>
+    </form>
+</section>
+
+<section class="card">
+    <div class="data-table-wrapper">
+    <table class="data-table">
+        <thead><tr><th>البرنامج</th><th>الحالة</th><th>الحالات المرتبطة</th><th>إجراء</th></tr></thead>
+        <tbody>
+        {% for program in programs %}
+            {% set n = case_counts.get(program.id, 0) %}
+            <tr>
+                <td>{{ program.name }}</td>
+                <td>
+                    <span class="status-badge {{ 'status-confirmed' if program.is_active else 'status-declined' }}">
+                        {{ "متاح" if program.is_active else "قريباً" }}
+                    </span>
+                </td>
+                <td>{{ n }}</td>
+                <td class="actions">
+                    <form method="post" action="{{ url_for('admin.toggle_program', program_id=program.id) }}" class="inline-form" data-ajax>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-small">
+                            {{ "إيقاف" if program.is_active else "تفعيل" }}
+                        </button>
+                    </form>
+                    {% if n == 0 %}
+                    <form method="post" action="{{ url_for('admin.delete_program', program_id=program.id) }}" class="inline-form" data-ajax
+                          data-confirm="هل أنت متأكد من حذف البرنامج «{{ program.name }}» نهائياً؟ لا يمكن التراجع عن هذا الإجراء."
+                          data-confirm-ok="حذف البرنامج" data-confirm-danger>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-small btn-danger">حذف</button>
+                    </form>
+                    {% else %}
+                    <span class="program-note">لا يمكن حذفه (مرتبط بـ {{ n }} حالة) — أوقفه بدلاً من ذلك</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+{% endblock %}

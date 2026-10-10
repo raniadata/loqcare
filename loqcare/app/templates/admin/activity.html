@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}سجل النشاطات{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>سجل النشاطات</h1>
+</div>
+
+<section class="card">
+    <form method="get" class="row-form">
+        <select name="admin_id" onchange="this.form.submit()">
+            <option value="">كل المسؤولين</option>
+            {% for a in admins %}
+                <option value="{{ a.id }}" {% if admin_filter == a.id %}selected{% endif %}>{{ a.full_name }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</section>
+
+<section class="card">
+    {% if logs %}
+        {% if logs|length >= activity_limit %}
+        <p class="muted">يعرض هذا السجل آخر {{ activity_limit }} عملية فقط. استعمل فلتر المسؤول لتضييق النتائج.</p>
+        {% endif %}
+        <div class="data-table-wrapper">
+        <table class="data-table" data-filterable data-filter-key="admin-activity">
+            <thead><tr>
+                <th data-filter="date">الوقت</th>
+                <th data-filter="select">المنفذ</th>
+                <th data-filter="select">القسم</th>
+                <th data-filter="select">نوع النشاط</th>
+                <th data-filter="text">التفاصيل</th>
+            </tr></thead>
+            <tbody>
+            {% for log in logs %}
+                <tr>
+                    <td>{{ log.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                    <td>{{ log.admin.full_name }}</td>
+                    <td>{{ section_labels.get(log.target_type, log.target_type) }}</td>
+                    <td>{{ action_labels.get(log.action, log.action) }}</td>
+                    <td>
+                        {{ log.details or "—" }}
+                        {% if log.target_type == "case" %}
+                            (<a href="{{ url_for('admin.case_detail', case_id=log.target_id) }}">حالة #{{ log.target_id }}</a>)
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    {% else %}
+        <p class="muted">لا يوجد أي نشاط مسجل بعد.</p>
+    {% endif %}
+</section>
+{% endblock %}

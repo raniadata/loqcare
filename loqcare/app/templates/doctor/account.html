@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "_macros.html" import phone_row %}
+{% block title %}حسابي{% endblock %}
+{% block content %}
+<h1>حسابي</h1>
+<div class="account-stack">
+
+<section class="card">
+    <h2>الصورة الشخصية</h2>
+    <div style="display:flex; align-items:center; gap:16px; margin-bottom:10px;">
+        {% if doctor.profile_photo %}
+            <img src="{{ url_for('static', filename='uploads/profiles/' + doctor.profile_photo) }}" alt="صورتي" class="profile-photo-preview">
+        {% else %}
+            <div class="profile-photo-placeholder">{{ doctor.full_name[0] }}</div>
+        {% endif %}
+    </div>
+    <form method="post" action="{{ url_for('doctor.upload_photo') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required>
+        <button type="submit" class="btn-primary" style="margin-top:8px;">تحديث الصورة</button>
+    </form>
+    <p class="field-hint">JPG، PNG أو WEBP — الحجم الأقصى 3 ميغا</p>
+</section>
+
+<section class="card">
+    <h2>بياناتي الشخصية والمهنية</h2>
+    <table class="data-table kv-table">
+        <tbody>
+            <tr><td class="muted">الاسم الكامل</td><td>{{ doctor.full_name }}</td></tr>
+            <tr><td class="muted">البريد الإلكتروني</td><td><span dir="ltr" class="ltr-inline">{{ doctor.email }}</span></td></tr>
+            <tr><td class="muted">الهاتف / واتساب الحالي</td><td><span dir="ltr" class="ltr-inline">{{ doctor.phone or "—" }}</span></td></tr>
+            <tr><td class="muted">التخصص</td><td>{{ doctor.specialty or "—" }}</td></tr>
+            <tr><td class="muted">اسم المستشفى</td><td>{{ doctor.hospital_name or "—" }}</td></tr>
+            <tr><td class="muted">القسم</td><td>{{ doctor.department or "—" }}</td></tr>
+            <tr><td class="muted">رقم الترخيص</td><td>{{ doctor.license_number or "—" }}</td></tr>
+            <tr><td class="muted">الدولة / المدينة</td><td>{{ (doctor.country + " / " + doctor.city) if doctor.country else "—" }}</td></tr>
+        </tbody>
+    </table>
+    <p class="muted" style="margin-top:8px;">
+        لتعديل البيانات المهنية (المستشفى، القسم، رقم الترخيص...)، يرجى التواصل مع الإدارة.
+    </p>
+</section>
+
+<section class="card">
+    <h2>تحديث رقم الهاتف</h2>
+    <form method="post" action="{{ url_for('doctor.account_update') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>رقم الواتساب الجديد</label>
+        {{ phone_row(selected=(form.get("country_code") if form else None) or default_country_code, value=(form.get("local_number","") if form else "")) }}
+        <button type="submit" class="btn-primary full-width">تحديث الرقم</button>
+    </form>
+</section>
+
+<section class="card">
+    <h2>تغيير كلمة المرور</h2>
+    <form method="post" action="{{ url_for('doctor.change_password') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>كلمة المرور الحالية</label>
+        <input type="password" name="current_password" required>
+        <label>كلمة المرور الجديدة</label>
+        <input type="password" name="new_password" required>
+        <label>تأكيد كلمة المرور الجديدة</label>
+        <input type="password" name="confirm_password" required>
+        <button type="submit" class="btn-primary full-width">تحديث كلمة المرور</button>
+    </form>
+</section>
+</div>
+{% endblock %}

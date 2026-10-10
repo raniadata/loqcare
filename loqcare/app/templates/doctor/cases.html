@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}الحالات{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ "إحالاتي" if not view_label else view_label }} ({{ cases|length }})</h1>
+    <a href="{{ url_for('doctor.new_referral') }}" class="btn-gold">+ إحالة جديدة</a>
+</div>
+
+{% if view_label %}
+<div class="view-chip">
+    <span>المعروض: <strong>{{ view_label }}</strong></span>
+    <a href="{{ url_for('doctor.cases') }}" class="btn-small">عرض كل الإحالات</a>
+</div>
+{% endif %}
+
+{% if cases %}
+    <div class="data-table-wrapper">
+    <table class="data-table" data-filterable data-filter-key="doctor-cases-{{ view or 'all' }}">
+        <thead><tr>
+            <th data-filter="text">#</th>
+            <th data-filter="text">المريض</th>
+            <th data-filter="select">البرنامج</th>
+            <th data-filter="select">الحالة</th>
+            <th data-filter="date">تاريخ التسجيل</th>
+        </tr></thead>
+        <tbody>
+        {% for case in cases %}
+            <tr>
+                <td>{{ case.id }}</td>
+                <td><a href="{{ url_for('doctor.case_detail', case_id=case.id) }}" class="name-link">{{ case.patient.full_name }}</a></td>
+                <td>{{ case.program.name }}</td>
+                <td data-value="{{ case.status }}"><span class="status-badge status-{{ case.status }}">{{ case.status }}</span></td>
+                <td>{{ case.created_at.strftime("%Y-%m-%d") }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+{% else %}
+    <p class="muted">{{ "لا توجد إحالات مطابقة لهذا العرض." if view_label else "لا توجد لديك أي إحالة بعد." }}</p>
+{% endif %}
+{% endblock %}

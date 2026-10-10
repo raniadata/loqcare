@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}المسؤولون (Admins)<script>
+document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-edit-admin]');
+    if (!b) return;
+    var row = document.getElementById('edit-admin-' + b.getAttribute('data-edit-admin'));
+    if (row) row.hidden = !row.hidden;
+});
+</script>
+{% endblock %}
+{% block content %}
+<h1>المسؤولون (Admins)</h1>
+
+<section class="card">
+    <h2>اللائحة الحالية ({{ admins|length }})</h2>
+    <div class="data-table-wrapper">
+    <table class="data-table">
+        <thead><tr><th>الاسم</th><th>البريد</th><th>الحالة</th><th>تاريخ الإنشاء</th>{% if current_user.is_principal_admin %}<th>إجراءات</th>{% endif %}</tr></thead>
+        <tbody>
+        {% for a in admins %}
+            <tr>
+                <td>{{ a.full_name }}{% if a.id == current_user.id %} <span class="muted">(أنت)</span>{% endif %}</td>
+                <td><span dir="ltr" class="ltr-inline">{{ a.email }}</span></td>
+                <td>
+                    {% if a.is_principal_admin %}<span class="status-badge status-confirmed">الحساب الرئيسي</span>
+                    {% elif a.is_active_account %}<span class="status-badge status-confirmed">نشط</span>
+                    {% else %}<span class="status-badge status-declined">ملغى</span>{% endif %}
+                </td>
+                <td>{{ a.created_at.strftime("%Y-%m-%d") }}</td>
+                {% if current_user.is_principal_admin %}
+                <td class="actions">
+                    {% if not a.is_principal_admin %}
+                    <button type="button" class="btn-small" data-edit-admin="{{ a.id }}">تعديل</button>
+                    {% if a.is_active_account %}
+                    <form method="post" action="{{ url_for('admin.deactivate_admin', user_id=a.id) }}" class="inline-form" data-ajax
+                          data-confirm="إلغاء حساب {{ a.full_name }}؟ لن يتمكن من الدخول، ويمكنك إعادة تفعيله لاحقاً." data-confirm-ok="إلغاء الحساب" data-confirm-danger>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-small btn-danger">إلغاء الحساب</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{{ url_for('admin.reactivate_admin', user_id=a.id) }}" class="inline-form" data-ajax>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-small btn-success">إعادة التفعيل</button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                </td>
+                {% endif %}
+            </tr>
+            {% if current_user.is_principal_admin and not a.is_principal_admin %}
+            <tr id="edit-admin-{{ a.id }}" class="edit-admin-row" hidden>
+                <td colspan="5">
+                    <form method="post" action="{{ url_for('admin.edit_admin', user_id=a.id) }}" class="row-form" data-ajax>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="text" name="full_name" value="{{ a.full_name }}" placeholder="الاسم الكامل" required>
+                        <input type="email" name="email" value="{{ a.email }}" placeholder="البريد" required dir="ltr">
+                        <input type="password" name="password" placeholder="كلمة مرور جديدة (اختياري)" autocomplete="new-password">
+                        <button type="submit" class="btn-primary">حفظ</button>
+                    </form>
+                </td>
+            </tr>
+            {% endif %}
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+
+<section class="card form-card">
+    <h2>إضافة Admin جديد</h2>
+    <form method="post" action="{{ url_for('admin.new_admin_post') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>الاسم الكامل</label>
+        <input type="text" name="full_name" required>
+        <label>البريد الإلكتروني</label>
+        <input type="email" name="email" required>
+        <label>كلمة المرور</label>
+        <input type="password" name="password" required>
+        <button type="submit" class="btn-primary full-width">إنشاء الحساب</button>
+    </form>
+</section>
+
+<p><a href="{{ url_for('admin.activity_log') }}">عرض سجل النشاطات ←</a></p>
+<script>
+document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-edit-admin]');
+    if (!b) return;
+    var row = document.getElementById('edit-admin-' + b.getAttribute('data-edit-admin'));
+    if (row) row.hidden = !row.hidden;
+});
+</script>
+{% endblock %}

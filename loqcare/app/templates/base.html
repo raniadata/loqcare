@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% if current_user.is_authenticated %}<meta name="csrf-token" content="{{ csrf_token() }}">{% endif %}
+    <title>{% block title %}LOQ CARE{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+{% if current_user.is_authenticated %}
+    <div class="app-shell">
+        {# رأس الجوال: برغر يمين + شعار واسم العلامة يسار (RTL) — يظهر فقط على الشاشات الصغيرة #}
+        <header class="mobile-header">
+            <div class="mh-start">
+                <button type="button" class="burger-btn" id="burger-btn" aria-label="فتح القائمة" aria-controls="app-sidebar" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
+                {% if current_user.is_doctor %}
+                <a href="{{ url_for('doctor.notifications') }}" class="top-header-bell mh-bell" title="الإشعارات" aria-label="الإشعارات">
+                    <svg class="icon-bell" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                    {% if unread_notifications_count %}<span class="nav-badge top-header-bell-badge">{{ unread_notifications_count }}</span>{% endif %}
+                </a>
+                {% elif current_user.is_admin and pending_approvals_count %}
+                <a href="{{ url_for('admin.approvals') }}" class="mh-pending" title="الموافقات">{{ pending_approvals_count }} موافقة</a>
+                {% endif %}
+            </div>
+            <a href="{{ url_for('main.dashboard') }}" class="mobile-brand">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="">
+                <span>LOQ CARE</span>
+            </a>
+        </header>
+        <div class="nav-overlay" id="nav-overlay"></div>
+
+        <aside class="sidebar" id="app-sidebar">
+            <div class="logo-box">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="LOQ CARE">
+                <span>LOQ CARE</span>
+            </div>
+            <nav>
+                {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if request.endpoint == 'admin.dashboard' }}">الرئيسية</a>
+                    <a href="{{ url_for('admin.approvals') }}" class="{{ 'active' if request.endpoint == 'admin.approvals' }}">
+                        الموافقات
+                        {% if pending_approvals_count %}<span class="nav-badge">{{ pending_approvals_count }}</span>{% endif %}
+                    </a>
+                    <a href="{{ url_for('admin.all_cases') }}" class="{{ 'active' if request.endpoint == 'admin.all_cases' }}">الحالات</a>
+                    <a href="{{ url_for('admin.programs') }}" class="{{ 'active' if request.endpoint == 'admin.programs' }}">البرامج</a>
+                    <a href="{{ url_for('admin.doctors_list') }}" class="{{ 'active' if request.endpoint in ['admin.doctors_list','admin.doctor_detail'] }}">الأطباء المحيلون</a>
+                    <a href="{{ url_for('admin.team_directory') }}" class="{{ 'active' if request.endpoint in ['admin.team_directory','admin.new_team_member','admin.member_detail'] }}">الفريق الطبي</a>
+                    <a href="{{ url_for('admin.patients') }}" class="{{ 'active' if request.endpoint == 'admin.patients' }}">المرضى</a>
+                    <a href="{{ url_for('admin.admins_list') }}" class="{{ 'active' if request.endpoint == 'admin.admins_list' }}">المسؤولون</a>
+                    <a href="{{ url_for('admin.activity_log') }}" class="{{ 'active' if request.endpoint == 'admin.activity_log' }}">سجل النشاطات</a>
+                {% elif current_user.is_doctor %}
+                    <a href="{{ url_for('doctor.dashboard') }}" class="{{ 'active' if request.endpoint == 'doctor.dashboard' }}">إحالاتي</a>
+                    <a href="{{ url_for('doctor.new_referral') }}" class="{{ 'active' if request.endpoint == 'doctor.new_referral' }}">+ إحالة جديدة</a>
+                    <a href="{{ url_for('doctor.cases') }}" class="{{ 'active' if request.endpoint in ['doctor.cases','doctor.case_detail'] }}">الحالات</a>
+                    <a href="{{ url_for('doctor.patients') }}" class="{{ 'active' if request.endpoint == 'doctor.patients' }}">مرضاي</a>
+                    <a href="{{ url_for('doctor.notifications') }}" class="{{ 'active' if request.endpoint == 'doctor.notifications' }}">
+                        الإشعارات
+                        {% if unread_notifications_count %}<span class="nav-badge">{{ unread_notifications_count }}</span>{% endif %}
+                    </a>
+                    <a href="{{ url_for('doctor.account') }}" class="{{ 'active' if request.endpoint == 'doctor.account' }}">حسابي</a>
+                {% endif %}
+            </nav>
+            {# مربع المستخدم + زر الخروج: ثابت أسفل الشريط الجانبي (دائماً ظاهر، بدون تمرير) #}
+            <div class="user-box">
+                <div class="user-box-name">
+                    {% if current_user.is_doctor and current_user.profile_photo %}
+                        <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_photo) }}" class="profile-photo-mini" alt="">
+                    {% endif %}
+                    {{ current_user.full_name }}
+                </div>
+                <form action="{{ url_for('auth.logout') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="logout-btn">تسجيل الخروج</button>
+                </form>
+            </div>
+        </aside>
+
+        <div class="app-main">
+            <header class="top-header">
+                <div class="top-header-user">
+                    {% if current_user.is_doctor and current_user.profile_photo %}
+                        <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_photo) }}" class="top-header-avatar" alt="">
+                    {% else %}
+                        <div class="top-header-avatar-placeholder">{{ current_user.full_name[0] }}</div>
+                    {% endif %}
+                    <span class="top-header-name">{{ current_user.full_name }}</span>
+                </div>
+                <div class="top-header-actions">
+                    {% if current_user.is_doctor %}
+                    <a href="{{ url_for('doctor.notifications') }}" class="top-header-bell" title="الإشعارات">
+                        <svg class="icon-bell" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                        {% if unread_notifications_count %}<span class="nav-badge top-header-bell-badge">{{ unread_notifications_count }}</span>{% endif %}
+                    </a>
+                    {% endif %}
+                    <form action="{{ url_for('auth.logout') }}" method="post" class="inline-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-outline btn-logout-top">تسجيل الخروج</button>
+                    </form>
+                </div>
+            </header>
+            <main class="container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-stack">
+                        {% for category, message in messages %}
+                            <div class="flash flash-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+{% else %}
+    <header class="topbar">
+        <button type="button" class="burger-btn topbar-burger" id="public-burger" aria-label="فتح القائمة" aria-controls="public-nav" aria-expanded="false">
+            <span></span><span></span><span></span>
+        </button>
+        <a href="{{ url_for('main.index') }}" class="brand">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="LOQ CARE">
+            <span>LOQ CARE</span>
+        </a>
+        <nav id="public-nav">
+            <a href="{{ url_for('public.patient_form') }}">أنا مريض</a>
+            <a href="{{ url_for('auth.login') }}">دخول</a>
+            <a href="{{ url_for('auth.register') }}" class="btn-outline">تسجيل طبيب</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-stack">
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        {{ self.content() }}
+    </main>
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+<script>
+(function () {
+    /* ---- قائمة الجوال (برغر) ---- */
+    function bindToggle(btnId, targetSel, bodyClass) {
+        var btn = document.getElementById(btnId);
+        if (!btn) return;
+        function set(open) {
+            document.body.classList.toggle(bodyClass, open);
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        btn.addEventListener('click', function () { set(!document.body.classList.contains(bodyClass)); });
+        var overlay = document.getElementById('nav-overlay');
+        if (overlay) overlay.addEventListener('click', function () { set(false); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); });
+        var target = document.querySelector(targetSel);
+        if (target) target.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('a')) set(false); });
+    }
+    bindToggle('burger-btn', '#app-sidebar nav', 'nav-open');
+    bindToggle('public-burger', '#public-nav', 'public-nav-open');
+
+
+    /* ---- جداول القوائم: كنحطو عنوان العمود فكل خلية، باش تتحول لبطاقات فالجوال (كل شي ظاهر بلا تمرير أفقي) ---- */
+    function labelTables() {
+        document.querySelectorAll('.data-table-wrapper table').forEach(function (table) {
+            var heads = Array.prototype.map.call(table.querySelectorAll('thead th'), function (th) { return th.textContent.trim(); });
+            table.querySelectorAll('tbody tr').forEach(function (tr) {
+                Array.prototype.forEach.call(tr.children, function (td, i) { td.setAttribute('data-label', heads[i] || ''); });
+            });
+        });
+    }
+    labelTables();
+
+    /* ---- حقول الأرقام فقط: تنظيف فوري + رسالة قصيرة ---- */
+    var AR = '٠١٢٣٤٥٦٧٨٩', FA = '۰۱۲۳۴۵۶۷۸۹';
+    function toLatin(str) {
+        return str.replace(/[٠-٩۰-۹]/g, function (ch) {
+            var i = AR.indexOf(ch); if (i < 0) i = FA.indexOf(ch); return String(i);
+        });
+    }
+    function bindDigits() { document.querySelectorAll('input[data-digits]').forEach(function (input) {
+        if (input.__digits) return;
+        input.__digits = true;
+        var hint = document.createElement('p');
+        hint.className = 'field-error';
+        hint.textContent = 'هذا الحقل يقبل الأرقام فقط.';
+        hint.hidden = true;
+        input.insertAdjacentElement('afterend', hint);
+        var timer;
+        function clean() {
+            var before = input.value;
+            var after = toLatin(before).replace(/[^0-9 \-]/g, '');
+            if (after !== before) {
+                input.value = after;
+                hint.hidden = false;
+                clearTimeout(timer);
+                timer = setTimeout(function () { hint.hidden = true; }, 2500);
+            }
+        }
+        input.addEventListener('input', clean);
+        input.addEventListener('blur', clean);
+    }); }
+    bindDigits();
+    document.addEventListener('loq:content', function () { labelTables(); bindDigits(); });
+})();
+</script>
+</body>
+</html>

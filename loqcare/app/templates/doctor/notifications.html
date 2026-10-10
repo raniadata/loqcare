@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}الإشعارات{% endblock %}
+{% block content %}
+<h1>الإشعارات ({{ notifications|length }})</h1>
+
+{% if notifications %}
+    <section class="card">
+        <div class="data-table-wrapper">
+        <table class="data-table" data-filterable data-filter-key="doctor-notifications">
+            <thead><tr>
+                <th data-filter="select">الحالة</th>
+                <th data-filter="select">من</th>
+                <th data-filter="text">الرسالة</th>
+                <th data-filter="date">التاريخ</th>
+            </tr></thead>
+            <tbody>
+            {% for n in notifications %}
+                <tr>
+                    <td>{% if n.id in new_ids %}<span class="status-badge status-pending">جديد</span>{% else %}<span class="status-badge status-confirmed">مقروء</span>{% endif %}</td>
+                    <td>{{ n.sender.full_name }}</td>
+                    <td>{{ n.message }}</td>
+                    <td>{{ n.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </section>
+{% else %}
+    <p class="muted">لا توجد أي إشعارات حالياً.</p>
+{% endif %}
+{% endblock %}

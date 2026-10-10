@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}الموافقات{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>طلبات التسجيل في انتظار الموافقة ({{ pending_doctors|length }})</h1>
+</div>
+<p class="muted">اضغط على اسم الطبيب لمراجعة كل البيانات التي أدخلها قبل اتخاذ القرار.</p>
+
+{% if pending_doctors %}
+<section class="card">
+    <div class="data-table-wrapper">
+    <table class="data-table" data-filterable data-filter-key="admin-approvals">
+        <thead><tr><th data-filter="text">الاسم</th><th data-filter="text">البريد</th><th data-filter="select">التخصص</th><th data-filter="text">المستشفى</th><th data-filter="date">تاريخ الطلب</th><th>إجراء</th></tr></thead>
+        <tbody>
+        {% for doc in pending_doctors %}
+            <tr>
+                <td><a href="{{ url_for('admin.doctor_detail', user_id=doc.id) }}" class="name-link">{{ doc.full_name }}</a></td>
+                <td><span dir="ltr" class="ltr-inline">{{ doc.email }}</span></td>
+                <td>{{ doc.specialty or "—" }}</td>
+                <td>{{ doc.hospital_name or "—" }}</td>
+                <td>{{ doc.created_at.strftime("%Y-%m-%d") }}</td>
+                <td class="actions">
+                    <a href="{{ url_for('admin.doctor_detail', user_id=doc.id) }}" class="btn-small">عرض التفاصيل</a>
+                    <form method="post" action="{{ url_for('admin.approve_doctor', user_id=doc.id) }}" class="inline-form" data-ajax>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="next" value="{{ url_for('admin.approvals') }}">
+                        <button type="submit" class="btn-small btn-success">قبول</button>
+                    </form>
+                    <form method="post" action="{{ url_for('admin.reject_doctor', user_id=doc.id) }}" class="inline-form" data-ajax data-confirm="متأكد أنك تريد رفض طلب هذا الطبيب؟" data-confirm-ok="رفض" data-confirm-danger>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="next" value="{{ url_for('admin.approvals') }}">
+                        <button type="submit" class="btn-small btn-danger">رفض</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+{% else %}
+<section class="card"><p class="muted">لا توجد أي طلبات في انتظار الموافقة حالياً.</p></section>
+{% endif %}
+{% endblock %}

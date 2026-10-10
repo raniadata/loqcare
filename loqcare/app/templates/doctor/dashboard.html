@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}إحالاتي{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>مرحباً {{ current_user.full_name }}</h1>
+        <p class="muted">تابع إحالاتك وحالاتك من مكان واحد</p>
+    </div>
+    <a href="{{ url_for('doctor.new_referral') }}" class="btn-gold">+ إحالة جديدة</a>
+</div>
+
+<section class="stat-grid stat-grid-3">
+    <a class="stat-card stat-link" href="{{ url_for('doctor.cases') }}">
+        <span class="stat-number">{{ stats.total }}</span>
+        <span class="stat-label">إجمالي المرضى المُحالين</span>
+        <span class="stat-hint">كل مريض أحلته، بأي حالة.</span>
+    </a>
+    <a class="stat-card stat-link" href="{{ url_for('doctor.cases', view='started') }}">
+        <span class="stat-number">{{ stats.started }}</span>
+        <span class="stat-label">المرضى الذين بدأوا البرنامج</span>
+        <span class="stat-hint">أكدوا المتابعة (حالة confirmed).</span>
+    </a>
+    <a class="stat-card stat-gold stat-link" href="{{ url_for('doctor.cases', view='action') }}">
+        <span class="stat-number">{{ stats.needs_action }}</span>
+        <span class="stat-label">إحالات تحتاج إلى إجراء</span>
+        <span class="stat-hint">استفسارات من المرضى، أو بلا رد منذ {{ stats.pending_days }} أيام أو أكثر.</span>
+    </a>
+</section>
+
+<section class="card">
+    <h2>توزيع الإحالات حسب الحالة</h2>
+    <div class="pie-chart-row">
+        <div class="pie-chart-circle" style="background: {{ pie_gradient }};"></div>
+        <div class="pie-legend">
+            {% for item in pie_legend %}
+                <div class="pie-legend-item">
+                    <span class="pie-legend-dot" style="background: {{ item.color }};"></span>
+                    {{ item.label }}
+                    <span class="pie-legend-count">({{ item.count }} — {{ item.percent }}%)</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="card">
+    <h2>نشاط الإحالات الشهري</h2>
+    <p class="muted">آخر 6 أشهر</p>
+    <div class="bar-chart">
+        {% for m in monthly_counts %}
+            <div class="bar-chart-col">
+                <div class="bar-chart-bar" style="height: {{ (m.count / max_count * 100)|round(0)|int }}%;">
+                    <span class="bar-chart-value">{{ m.count }}</span>
+                </div>
+                <span class="bar-chart-label">{{ m.label }}</span>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="card">
+    <h2>آخر الإحالات</h2>
+    {% if cases %}
+        <div class="data-table-wrapper">
+        <table class="data-table">
+            <thead><tr><th>#</th><th>المريض</th><th>البرنامج</th><th>الحالة</th><th>تاريخ التسجيل</th></tr></thead>
+            <tbody>
+            {% for case in cases %}
+                <tr>
+                    <td>{{ case.id }}</td>
+                    <td><a href="{{ url_for('doctor.case_detail', case_id=case.id) }}" class="name-link">{{ case.patient.full_name }}</a></td>
+                    <td>{{ case.program.name }}</td>
+                    <td><span class="status-badge status-{{ case.status }}">{{ case.status }}</span></td>
+                    <td>{{ case.created_at.strftime("%Y-%m-%d") }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    {% else %}
+        <p class="muted">لا توجد لديك أي إحالة بعد. ابدأ بإضافة واحدة.</p>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,9 @@
+{# تبويبات مشتركة: الأطباء المحيلون ⟷ الفريق الطبي (صفحتين مستقلتين) #}
+<nav class="tabs" aria-label="نوع المستخدم">
+    <a href="{{ url_for('admin.doctors_list') }}" class="{{ 'active' if active == 'doctors' }}">
+        الأطباء المحيلون <span class="tab-count">{{ counts.doctors }}</span>
+    </a>
+    <a href="{{ url_for('admin.team_directory') }}" class="{{ 'active' if active == 'team' }}">
+        الفريق الطبي <span class="tab-count">{{ counts.team }}</span>
+    </a>
+</nav>

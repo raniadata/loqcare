@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{{ member.full_name }}{% endblock %}
+{% block content %}
+<div class="detail-head">
+    {% if member.profile_photo %}
+        <img src="{{ url_for('static', filename='uploads/profiles/' + member.profile_photo) }}" alt="" class="profile-photo-preview">
+    {% else %}
+        <div class="profile-photo-placeholder">{{ member.full_name[0] }}</div>
+    {% endif %}
+    <div>
+        <h1>{{ member.full_name }}</h1>
+        <p class="muted"><span class="type-badge type-{{ member.member_type or 'doctor' }}">{{ member.member_type_label }}</span>
+            {{ member.specialty or "عضو الفريق الطبي" }}{% if member.sub_specialty %} — {{ member.sub_specialty }}{% endif %}</p>
+    </div>
+</div>
+
+<section class="card">
+    <h2>البيانات الشخصية والمهنية</h2>
+    <table class="data-table kv-table">
+        <tbody>
+            <tr><td class="muted">البريد الإلكتروني</td><td><span dir="ltr" class="ltr-inline">{{ member.email }}</span></td></tr>
+            <tr><td class="muted">الهاتف / واتساب</td><td><span dir="ltr" class="ltr-inline">{{ member.phone or "—" }}</span></td></tr>
+            <tr><td class="muted">نوع العضو</td><td>{{ member.member_type_label }}</td></tr>
+            <tr><td class="muted">التخصص</td><td>{{ member.specialty or "—" }}</td></tr>
+            <tr><td class="muted">الرتبة / الدرجة</td><td>{{ member.member_rank or "—" }}</td></tr>
+            <tr><td class="muted">التخصص الدقيق</td><td>{{ member.sub_specialty or "—" }}</td></tr>
+            <tr><td class="muted">رقم الترخيص</td><td>{{ member.license_number or "—" }}</td></tr>
+            <tr><td class="muted">مكان العمل</td><td>{{ member.workplace or "—" }}</td></tr>
+            <tr><td class="muted">الدولة / المدينة</td><td>{{ (member.country + " / " + member.city) if member.country else "—" }}</td></tr>
+            <tr><td class="muted">سنوات الخبرة</td><td>{{ member.years_experience if member.years_experience is not none else "—" }}</td></tr>
+            <tr><td class="muted">الشهادات</td><td>{{ member.certificates or "—" }}</td></tr>
+            <tr><td class="muted">نبذة مهنية</td><td>{{ member.bio or "—" }}</td></tr>
+            <tr><td class="muted">اللغات</td><td>{{ member.languages or "—" }}</td></tr>
+            <tr><td class="muted">حالة الحساب</td><td><span class="status-badge status-{{ 'confirmed' if member.account_status == 'approved' else 'declined' }}">{{ member.account_status }}</span></td></tr>
+            <tr><td class="muted">تاريخ الإنشاء</td><td>{{ member.created_at.strftime("%Y-%m-%d") }}</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<section class="card">
+    <h2>الإجراءات</h2>
+    <div class="actions action-row">
+        <form method="post" action="{{ url_for('admin.reset_member_password', user_id=member.id) }}" class="inline-form"
+              onsubmit="return confirm('سيتم إنشاء كلمة مرور جديدة وإبطال القديمة. متأكد؟');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-primary">إعادة تعيين كلمة المرور</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.deactivate_member', user_id=member.id) }}" class="inline-form"
+              onsubmit="return confirm('متأكد أنك تريد إلغاء تفعيل هذا العضو؟ لن يتمكن من الدخول بعدها.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-danger">إلغاء التفعيل</button>
+        </form>
+    </div>
+</section>
+
+<section class="card">
+    <h2>الحالات المعيّنة لهذا العضو ({{ assigned_cases|length }})</h2>
+    {% if assigned_cases %}
+        <div class="data-table-wrapper">
+        <table class="data-table" data-filterable data-filter-key="admin-member-cases">
+            <thead><tr><th data-filter="text">#</th><th data-filter="text">المريض</th><th data-filter="select">البرنامج</th><th data-filter="select">الحالة</th></tr></thead>
+            <tbody>
+            {% for case in assigned_cases %}
+                <tr>
+                    <td>{{ case.id }}</td>
+                    <td><a href="{{ url_for('admin.case_detail', case_id=case.id) }}" class="name-link">{{ case.patient.full_name }}</a></td>
+                    <td>{{ case.program.name }}</td>
+                    <td data-value="{{ case.status }}"><span class="status-badge status-{{ case.status }}">{{ case.status }}</span></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    {% else %}
+        <p class="muted">لا توجد حالات معيّنة لهذا العضو بعد.</p>
+    {% endif %}
+</section>
+
+<p><a href="{{ url_for('admin.team_directory') }}" class="btn-small">← الرجوع إلى الفريق</a></p>
+{% endblock %}

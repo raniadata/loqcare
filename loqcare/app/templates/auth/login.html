@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}تسجيل الدخول{% endblock %}
+{% block content %}
+<div class="card form-card">
+    <h1>تسجيل الدخول</h1>
+    <form method="post" action="{{ url_for('auth.login_post') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>البريد الإلكتروني</label>
+        <input type="email" name="email" required autofocus>
+
+        <label>كلمة المرور</label>
+        <input type="password" name="password" required>
+
+        <button type="submit" class="btn-primary full-width">دخول</button>
+    </form>
+    <p class="muted">ليس لديك حساب؟ <a href="{{ url_for('auth.register') }}">سجّل كطبيب</a></p>
+</div>
+{% endblock %}

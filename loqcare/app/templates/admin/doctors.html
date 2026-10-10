@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}الأطباء المحيلون{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>الأطباء المحيلون</h1>
+    <a href="{{ url_for('admin.approvals') }}" class="btn-small">طلبات الموافقة</a>
+</div>
+{% with active='doctors' %}{% include "admin/_people_tabs.html" %}{% endwith %}
+<p class="muted">الأطباء الخارجيون الذين يحيلون المرضى إلى LOQ CARE. أعضاء الفريق الطبي لهم صفحة مستقلة.</p>
+
+<section class="card" id="active-doctors">
+    <h2>الأطباء المحيلون النشطون ({{ active_doctors|length }})</h2>
+    {% if active_doctors %}
+        <div class="data-table-wrapper">
+        <table class="data-table" data-filterable data-filter-key="admin-doctors">
+            <thead><tr>
+                <th data-filter="text">الاسم</th>
+                <th data-filter="text">البريد</th>
+                <th data-filter="text">الهاتف</th>
+                <th data-filter="select">التخصص</th>
+                <th data-filter="text">المستشفى</th>
+                <th data-filter="select">الدولة</th>
+                <th>إجراء</th>
+            </tr></thead>
+            <tbody>
+            {% for doc in active_doctors %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('admin.doctor_detail', user_id=doc.id) }}" class="name-link" style="display:flex; align-items:center; gap:8px;">
+                            {% if doc.profile_photo %}
+                                <img src="{{ url_for('static', filename='uploads/profiles/' + doc.profile_photo) }}" class="top-header-avatar" alt="" style="width:28px;height:28px;">
+                            {% else %}
+                                <span class="top-header-avatar-placeholder" style="width:28px;height:28px;font-size:12px;">{{ doc.full_name[0] }}</span>
+                            {% endif %}
+                            {{ doc.full_name }}
+                        </a>
+                    </td>
+                    <td><span dir="ltr" class="ltr-inline">{{ doc.email }}</span></td>
+                    <td><span dir="ltr" class="ltr-inline">{{ doc.phone or "—" }}</span></td>
+                    <td>{{ doc.specialty or "—" }}</td>
+                    <td>{{ doc.hospital_name or "—" }}</td>
+                    <td data-value="{{ doc.country or '' }}">{{ (doc.country + " / " + doc.city) if doc.country else "—" }}</td>
+                    <td class="actions">
+                        <button type="button" class="btn-small"
+                                data-notify-url="{{ url_for('admin.notify_doctor', user_id=doc.id) }}"
+                                data-notify-name="{{ doc.full_name }}">إشعار</button>
+                        <a href="{{ url_for('admin.doctor_detail', user_id=doc.id) }}" class="btn-small">التفاصيل</a>
+                        <form method="post" action="{{ url_for('admin.deactivate_doctor', user_id=doc.id) }}" class="inline-form"
+                              data-confirm="متأكد أنك تريد إلغاء تفعيل الطبيب {{ doc.full_name }}؟ لن يتمكن من الدخول بعدها." data-confirm-ok="إلغاء التفعيل" data-confirm-danger>
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-small btn-danger">إلغاء التفعيل</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    {% else %}
+        <p class="muted">لا يوجد أي طبيب نشط حالياً.</p>
+    {% endif %}
+</section>
+{% endblock %}

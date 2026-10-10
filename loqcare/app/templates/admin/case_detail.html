@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}تفاصيل الحالة{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>حالة #{{ case.id }}: {{ case.patient.full_name }}</h1>
+    {% if case.doctor %}
+    <button type="button" class="btn-small"
+            data-notify-url="{{ url_for('admin.notify_doctor', user_id=case.doctor.id) }}"
+            data-notify-name="{{ case.doctor.full_name }}"
+            data-notify-prefill="بخصوص الحالة #{{ case.id }}: ">إشعار للطبيب المحيل</button>
+    {% endif %}
+</div>
+
+<section class="card">
+    <p><strong>البرنامج:</strong> {{ case.program.name }}</p>
+    <p><strong>الطبيب المحيل:</strong>
+        {% if case.doctor %}<a href="{{ url_for('admin.doctor_detail', user_id=case.doctor.id) }}" class="name-link">{{ case.doctor.full_name }}</a>{% else %}— (حالة B2C بدون طبيب){% endif %}
+    </p>
+    <p><strong>رقم الواتساب:</strong> <span dir="ltr" class="ltr-inline">{{ case.patient.whatsapp_number }}</span></p>
+    <p><strong>المصدر:</strong> {{ "طبيب" if case.source == "doctor_referral" else "B2C" }}</p>
+    <p><strong>الحالة:</strong> <span class="status-badge status-{{ case.status }}">{{ case.status }}</span></p>
+    {% if case.notes %}<p><strong>ملاحظات:</strong> {{ case.notes }}</p>{% endif %}
+</section>
+
+{% if last_inbound %}
+<section class="card">
+    <h2>آخر رسالة من المريض عبر واتساب</h2>
+    <div class="patient-message-box">
+        <p class="patient-message-text">"{{ last_inbound.body }}"</p>
+        <p class="muted" style="margin-top:6px;">{{ last_inbound.created_at.strftime("%Y-%m-%d %H:%M") }}</p>
+    </div>
+    <div class="suggestion-box">
+        <strong>اقتراح النظام:</strong>
+        <span class="status-badge status-{{ suggested_status }}">{{ suggested_status }}</span>
+        <p class="muted" style="margin-top:6px;">
+            هذا اقتراح فقط بناءً على كلمات مفتاحية بسيطة، وليس تأكيداً حقيقياً.
+            يُرجى التواصل مع المريض (عادة من رقم آخر) للتأكد الفعلي قبل تغيير حالة الملف يدوياً بالأسفل.
+        </p>
+    </div>
+</section>
+{% endif %}
+
+<section class="card" id="case-status">
+    <h2>تغيير حالة الملف يدوياً</h2>
+    {% if saved == "status" %}
+    <div class="saved-banner" role="status">تم حفظ الحالة الجديدة: <span class="status-badge status-{{ case.status }}">{{ case.status }}</span></div>
+    {% endif %}
+    <p class="muted">هذا هو المصدر الوحيد لتغيير حالة الملف — لا يتم أي تغيير تلقائي من واتساب.</p>
+    <form method="post" action="{{ url_for('admin.update_case_status', case_id=case.id) }}" class="row-form" data-ajax>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <select name="status">
+            <option value="pending" {% if case.status == "pending" %}selected{% endif %}>pending</option>
+            <option value="confirmed" {% if case.status == "confirmed" %}selected{% endif %}>confirmed</option>
+            <option value="declined" {% if case.status == "declined" %}selected{% endif %}>declined</option>
+            <option value="inquiry" {% if case.status == "inquiry" %}selected{% endif %}>inquiry</option>
+        </select>
+        <button type="submit" class="btn-primary">تحديث الحالة</button>
+    </form>
+</section>
+
+<section class="card" id="team-assignment">
+    <h2>تعيين الفريق لهذه الحالة</h2>
+    {% if saved == "team" %}
+    <div class="saved-banner" role="status">تم حفظ تعيين الفريق بنجاح.</div>
+    {% endif %}
+    <p class="muted" style="margin-bottom:0;">الفريق المعيّن حالياً (المحفوظ):</p>
+    {% if assigned_members %}
+    <div class="assigned-chips">
+        {% for m in assigned_members %}
+        <span class="assigned-chip">✓ {{ m.full_name }} <span class="muted">({{ m.member_type_label }})</span></span>
+        {% endfor %}
+    </div>
+    {% if last_assigned_at %}<p class="muted">آخر حفظ: {{ last_assigned_at.strftime("%Y-%m-%d %H:%M") }}</p>{% endif %}
+    {% else %}
+    <p class="assigned-empty">لم يُعيَّن أي عضو لهذه الحالة بعد.</p>
+    {% endif %}
+    <p class="muted">يمكنك اختيار أكثر من عضو (مثلاً طبيب + أخصائي تغذية)، ثم اضغط «حفظ التعيين».</p>
+    <form method="post" action="{{ url_for('admin.assign_case', case_id=case.id) }}" id="assign-form" data-ajax>
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="checkbox-list">
+        {% for member in team_members %}
+            <label class="checkbox-item">
+                <input type="checkbox" name="team_member_ids" value="{{ member.id }}"
+                    {% if member.id in assigned_ids %}checked{% endif %}>
+                {{ member.full_name }}
+                <span class="type-badge type-{{ member.member_type or 'doctor' }}">{{ member.member_type_label }}</span>
+                <span class="muted">({{ member.specialty or member.role }})</span>
+                {% if member.id in assigned_ids %}<span class="muted">— معيّن ✓</span>{% endif %}
+            </label>
+        {% else %}
+            <p class="muted">لا يوجد أعضاء نشطون في الفريق الطبي بعد.</p>
+        {% endfor %}
+        </div>
+        <div class="unsaved-note" id="assign-unsaved" hidden>لديك تغييرات غير محفوظة — اضغط «حفظ التعيين» لاعتمادها.</div>
+        <button type="submit" class="btn-primary">حفظ التعيين</button>
+    </form>
+</section>
+
+{% if case_history %}
+<section class="card">
+    <h2>سجل التغييرات على هذه الحالة</h2>
+    <div class="data-table-wrapper">
+    <table class="data-table" data-filterable data-filter-key="admin-case-history">
+        <thead><tr><th data-filter="date">الوقت</th><th data-filter="select">المسؤول</th><th data-filter="text">ماذا تغيّر</th></tr></thead>
+        <tbody>
+        {% for log in case_history %}
+            <tr>
+                <td>{{ log.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                <td>{{ log.admin.full_name }}</td>
+                <td>{{ log.details }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

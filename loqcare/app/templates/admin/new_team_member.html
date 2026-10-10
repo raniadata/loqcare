@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% from "_macros.html" import phone_row %}
+{% block title %}إضافة عضو فريق طبي{% endblock %}
+{% block content %}
+{% set form = form or {} %}
+<div class="card form-card" style="max-width:640px;">
+    <h1>إضافة عضو للفريق الطبي</h1>
+    <p class="muted">اختر نوع العضو أولاً، وستظهر الحقول المناسبة له. يتم تفعيل الحساب مباشرة.</p>
+    {% if form %}
+    <p class="form-restored">تم الاحتفاظ بالبيانات التي أدخلتها — صحّح الخطأ المذكور أعلاه وأعد إدخال كلمة المرور فقط.</p>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('admin.new_team_member_post') }}" id="member-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <h3 class="form-section-title">نوع العضو</h3>
+        <div class="type-choice" role="radiogroup" aria-label="نوع العضو">
+            {% for key, label in member_types.items() %}
+            <label>
+                <input type="radio" name="member_type" value="{{ key }}" {% if form.get('member_type') == key %}checked{% endif %} required>
+                {{ label }}
+            </label>
+            {% endfor %}
+        </div>
+
+        <div id="member-fields" {% if not form.get('member_type') %}hidden{% endif %}>
+
+            <h3 class="form-section-title">البيانات الأساسية (إلزامية)</h3>
+
+            <label>الاسم الكامل</label>
+            <input type="text" name="full_name" value="{{ form.get('full_name', '') }}" required>
+
+            {# ===== حقول خاصة بالطبيب ===== #}
+            <div data-for-type="doctor" {% if form.get('member_type') != 'doctor' %}hidden{% endif %}>
+                <label>التخصص الطبي</label>
+                <select name="specialty" data-other-toggle="specialty-other-doctor" required>
+                    <option value="" disabled {% if not form.get('specialty') %}selected{% endif %}>اختر التخصص</option>
+                    {% for s in member_specialties['doctor'] %}
+                    <option value="{{ s }}" {% if form.get('specialty') == s and form.get('member_type') == 'doctor' %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                    <option value="{{ other_specialty }}" {% if form.get('specialty') == other_specialty and form.get('member_type') == 'doctor' %}selected{% endif %}>{{ other_specialty }} (يرجى التحديد)</option>
+                </select>
+                <input type="text" name="specialty_other" id="specialty-other-doctor" placeholder="اكتب التخصص هنا"
+                       value="{{ form.get('specialty_other', '') }}" style="margin-top:8px;" hidden>
+
+                <label>الرتبة الطبية</label>
+                <select name="member_rank" required>
+                    <option value="" disabled {% if not form.get('member_rank') %}selected{% endif %}>اختر الرتبة</option>
+                    {% for r in member_ranks['doctor'] %}
+                    <option value="{{ r }}" {% if form.get('member_rank') == r %}selected{% endif %}>{{ r }}</option>
+                    {% endfor %}
+                </select>
+
+                <label>التخصص الدقيق (إن وجد)</label>
+                <input type="text" name="sub_specialty" value="{{ form.get('sub_specialty', '') if form.get('member_type') == 'doctor' else '' }}" placeholder="مثال: سكري الأطفال">
+
+                <label>رقم الترخيص الطبي</label>
+                <input type="text" name="license_number" value="{{ form.get('license_number', '') if form.get('member_type') == 'doctor' else '' }}"
+                       inputmode="numeric" pattern="[0-9 \-]*" maxlength="20" data-digits title="أرقام فقط" required>
+
+                <label>الشهادات / التراخيص</label>
+                <textarea name="certificates" rows="2" required>{{ form.get('certificates', '') if form.get('member_type') == 'doctor' else '' }}</textarea>
+            </div>
+
+            {# ===== حقول خاصة بأخصائي التغذية ===== #}
+            <div data-for-type="nutritionist" {% if form.get('member_type') != 'nutritionist' %}hidden{% endif %}>
+                <label>مجال التغذية</label>
+                <select name="specialty" data-other-toggle="specialty-other-nutritionist" required>
+                    <option value="" disabled {% if not form.get('specialty') %}selected{% endif %}>اختر المجال</option>
+                    {% for s in member_specialties['nutritionist'] %}
+                    <option value="{{ s }}" {% if form.get('specialty') == s and form.get('member_type') == 'nutritionist' %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                    <option value="{{ other_specialty }}" {% if form.get('specialty') == other_specialty and form.get('member_type') == 'nutritionist' %}selected{% endif %}>{{ other_specialty }} (يرجى التحديد)</option>
+                </select>
+                <input type="text" name="specialty_other" id="specialty-other-nutritionist" placeholder="اكتب المجال هنا"
+                       value="{{ form.get('specialty_other', '') }}" style="margin-top:8px;" hidden>
+
+                <label>الدرجة المهنية</label>
+                <select name="member_rank" required>
+                    <option value="" disabled {% if not form.get('member_rank') %}selected{% endif %}>اختر الدرجة</option>
+                    {% for r in member_ranks['nutritionist'] %}
+                    <option value="{{ r }}" {% if form.get('member_rank') == r %}selected{% endif %}>{{ r }}</option>
+                    {% endfor %}
+                </select>
+
+                <label>مجال الاهتمام الدقيق (إن وجد)</label>
+                <input type="text" name="sub_specialty" value="{{ form.get('sub_specialty', '') if form.get('member_type') == 'nutritionist' else '' }}" placeholder="مثال: تغذية السكري من النوع الأول">
+
+                <label>رقم القيد المهني (إن وجد)</label>
+                <input type="text" name="license_number" value="{{ form.get('license_number', '') if form.get('member_type') == 'nutritionist' else '' }}"
+                       inputmode="numeric" pattern="[0-9 \-]*" maxlength="20" data-digits title="أرقام فقط">
+
+                <label>الشهادات المهنية (مثال: RD، CDE، ماستر تغذية)</label>
+                <textarea name="certificates" rows="2" required>{{ form.get('certificates', '') if form.get('member_type') == 'nutritionist' else '' }}</textarea>
+            </div>
+
+            <div class="two-col">
+                <div>
+                    <label>الدولة</label>
+                    <input type="text" name="country" value="{{ form.get('country', '') }}" required>
+                </div>
+                <div>
+                    <label>المدينة</label>
+                    <input type="text" name="city" value="{{ form.get('city', '') }}" required>
+                </div>
+            </div>
+
+            <label>رقم الهاتف / واتساب</label>
+            {{ phone_row(selected=form.get("country_code") or default_country_code, value=form.get("local_number", "")) }}
+
+            <label>البريد الإلكتروني</label>
+            <input type="email" name="email" value="{{ form.get('email', '') }}" required>
+
+            <label>سنوات الخبرة</label>
+            <input type="number" name="years_experience" min="0" max="60" value="{{ form.get('years_experience', '') }}" required>
+
+            <label>نبذة مهنية</label>
+            <textarea name="bio" rows="3" required>{{ form.get('bio', '') }}</textarea>
+
+            <label>كلمة المرور المؤقتة</label>
+            <input type="password" name="password" required>
+
+            <h3 class="form-section-title">بيانات إضافية (اختيارية)</h3>
+
+            <label>اللغات</label>
+            <input type="text" name="languages" value="{{ form.get('languages', '') }}" placeholder="عربية، إنجليزية...">
+
+            <label>مكان العمل</label>
+            <input type="text" name="workplace" value="{{ form.get('workplace', '') }}">
+
+            <label>الاهتمامات / التخصصات الإضافية</label>
+            <textarea name="additional_interests" rows="2">{{ form.get('additional_interests', '') }}</textarea>
+
+            <label>روابط مهنية</label>
+            <input type="url" name="professional_links" value="{{ form.get('professional_links', '') }}" placeholder="LinkedIn، إلخ">
+
+            <button type="submit" class="btn-primary full-width">إنشاء الحساب</button>
+        </div>
+    </form>
+</div>
+
+{% if focus %}
+<script>
+    (function () {
+        var els = document.querySelectorAll('[name="{{ focus }}"]');
+        for (var i = 0; i < els.length; i++) {
+            if (!els[i].disabled && els[i].offsetParent !== null) {
+                els[i].focus();
+                if (els[i].scrollIntoView) els[i].scrollIntoView({block: 'center'});
+                break;
+            }
+        }
+    })();
+</script>
+{% endif %}
+{% endblock %}
