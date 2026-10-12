@@ -90,7 +90,7 @@
 
 <section class="card">
     <h2>البحث في الحالات</h2>
-    <form method="get" class="row-form">
+    <form method="get" class="row-form" data-ajax-get>
         <input type="date" name="date" value="{{ request.args.get('date', '') }}" placeholder="التاريخ">
         <input type="text" name="doctor_name" value="{{ request.args.get('doctor_name', '') }}" placeholder="اسم الطبيب المحيل">
         <button type="submit" class="btn-primary">بحث</button>
@@ -104,9 +104,9 @@
     <h2>{% if request.args.get('date') or request.args.get('doctor_name') %}نتائج البحث{% else %}آخر الحالات{% endif %}</h2>
     {% if cases %}
         <div class="data-table-wrapper">
-        <table class="data-table">
+        <table class="data-table" data-filterable data-filter-key="admin-dashboard-cases">
             <thead>
-                <tr><th>#</th><th>المريض</th><th>الطبيب المحيل</th><th>البرنامج</th><th>المصدر</th><th>الحالة</th><th>الفريق المعين</th><th>تعيين</th></tr>
+                <tr><th data-filter="text">#</th><th data-filter="text">المريض</th><th data-filter="text">الطبيب المحيل</th><th data-filter="select">البرنامج</th><th data-filter="select">المصدر</th><th data-filter="select">الحالة</th><th>الفريق المعين</th><th>تعيين</th></tr><th>الطبيب المحيل</th><th>البرنامج</th><th>المصدر</th><th>الحالة</th><th>الفريق المعين</th><th>تعيين</th></tr>
             </thead>
             <tbody>
             {% for case in cases %}
@@ -116,9 +116,10 @@
                     <td>{{ case.doctor.full_name if case.doctor else "—" }}</td>
                     <td>{{ case.program.name }}</td>
                     <td>{{ "طبيب" if case.source == "doctor_referral" else "B2C" }}</td>
-                    <td>
+                    <td data-value="{{ case.status }}">
                         <form method="post" action="{{ url_for('admin.update_case_status', case_id=case.id) }}" class="inline-form quick-status-form" data-ajax>
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
                             <select name="status" class="quick-status-select status-select-{{ case.status }}" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
                                 <option value="pending" {% if case.status == "pending" %}selected{% endif %}>pending</option>
                                 <option value="confirmed" {% if case.status == "confirmed" %}selected{% endif %}>confirmed</option>

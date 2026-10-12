@@ -758,6 +758,8 @@ def update_case_status(case_id):
     log_activity("change_status", "case", case.id, f"{old_status} → {new_status}")
     db.session.commit()
     flash("تم تحديث حالة الملف.", "success")
+    if request.form.get("next"):
+        return redirect(_safe_next(url_for("admin.case_detail", case_id=case.id)))
     return redirect(url_for("admin.case_detail", case_id=case.id, saved="status", _anchor="case-status"))
 
 

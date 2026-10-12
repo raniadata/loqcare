@@ -4,7 +4,7 @@
 <h1>كل الحالات ({{ cases|length }})</h1>
 
 <section class="card">
-    <form method="get" class="row-form">
+        <form method="get" class="row-form" data-ajax-get>
         <input type="date" name="date" value="{{ request.args.get('date', '') }}" placeholder="التاريخ">
         <input type="text" name="doctor_name" value="{{ request.args.get('doctor_name', '') }}" placeholder="اسم الطبيب المحيل">
         <button type="submit" class="btn-primary">بحث</button>
@@ -34,7 +34,18 @@
                 <td>{{ case.doctor.full_name if case.doctor else "— (B2C)" }}</td>
                 <td>{{ case.program.name }}</td>
                 <td>{{ "طبيب" if case.source == "doctor_referral" else "B2C" }}</td>
-                <td data-value="{{ case.status }}"><span class="status-badge status-{{ case.status }}">{{ case.status }}</span></td>
+                <td data-value="{{ case.status }}">
+                    <form method="post" action="{{ url_for('admin.update_case_status', case_id=case.id) }}" class="inline-form quick-status-form" data-ajax>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+                        <select name="status" class="quick-status-select status-select-{{ case.status }}" aria-label="حالة الملف" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+                            <option value="pending" {% if case.status == "pending" %}selected{% endif %}>pending</option>
+                            <option value="confirmed" {% if case.status == "confirmed" %}selected{% endif %}>confirmed</option>
+                            <option value="declined" {% if case.status == "declined" %}selected{% endif %}>declined</option>
+                            <option value="inquiry" {% if case.status == "inquiry" %}selected{% endif %}>inquiry</option>
+                        </select>
+                    </form>
+                </td>
                 <td>{{ case.created_at.strftime("%Y-%m-%d") }}</td>
                 <td><a href="{{ url_for('admin.case_detail', case_id=case.id) }}">التفاصيل</a></td>
             </tr>

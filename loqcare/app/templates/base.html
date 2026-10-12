@@ -34,10 +34,10 @@
         <div class="nav-overlay" id="nav-overlay"></div>
 
         <aside class="sidebar" id="app-sidebar">
-            <div class="logo-box">
-                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="LOQ CARE">
+            <a href="{{ url_for('main.dashboard') }}" class="logo-box" aria-label="LOQ CARE — الرئيسية">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="">
                 <span>LOQ CARE</span>
-            </div>
+            </a>
             <nav>
                 {% if current_user.is_admin %}
                     <a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if request.endpoint == 'admin.dashboard' }}">الرئيسية</a>

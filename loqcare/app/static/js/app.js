@@ -432,4 +432,26 @@
             })
             .then(function () { ajaxBusy = false; });
     });
+        /* فلاتر البحث (GET): نجيبو الصفحة بـ fetch ونبدلو المحتوى بلا قفزة لأعلى الصفحة */
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (e.defaultPrevented || !form.hasAttribute || !form.hasAttribute('data-ajax-get')) return;
+        if (!window.fetch || !window.DOMParser || !window.URLSearchParams) return;
+        e.preventDefault();
+        var params = new URLSearchParams();
+        new FormData(form).forEach(function (v, k) { if (typeof v === 'string' && v !== '') params.append(k, v); });
+        var url = (form.getAttribute('action') || location.pathname) + (params.toString() ? '?' + params.toString() : '');
+        fetch(url, { credentials: 'same-origin' })
+            .then(function (r) {
+                var ct = r.headers.get('content-type') || '';
+                if (!r.ok || ct.indexOf('text/html') === -1) throw new Error('bad');
+                return r.text();
+            })
+            .then(function (html) {
+                var doc = new DOMParser().parseFromString(html, 'text/html');
+                if (!swapContent(doc)) { location.href = url; return; }
+                try { history.replaceState(null, '', url); } catch (err) { /* غير متاح */ }
+            })
+            .catch(function () { location.href = url; });
+    });
 })();

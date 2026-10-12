@@ -6,8 +6,8 @@
 </div>
 
 <section class="card">
-    <form method="get" class="row-form">
-        <select name="admin_id" onchange="this.form.submit()">
+    <form method="get" class="row-form" data-ajax-get>
+        <select name="admin_id" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">>
             <option value="">كل المسؤولين</option>
             {% for a in admins %}
                 <option value="{{ a.id }}" {% if admin_filter == a.id %}selected{% endif %}>{{ a.full_name }}</option>
